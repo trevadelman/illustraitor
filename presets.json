@@ -1,0 +1,130 @@
+{
+  "presets": [
+    {
+      "name": "Photo Realistic",
+      "description": "Highly detailed photographic style",
+      "config": {
+        "steps": 25,
+        "guidance_scale": 7.0,
+        "guidance_embed": 3.0,
+        "sampler": "DPM++ 2M Karras",
+        "negative_prompt": "(worst quality, low quality, normal quality, blurry, watermark, artificial, oversaturated)",
+        "aesthetic_score": 8.5,
+        "sharpness": 2,
+        "refiner_start": 0.8
+      }
+    },
+    {
+      "name": "Animated Style",
+      "description": "Studio Ghibli inspired animation style",
+      "config": {
+        "steps": 20,
+        "guidance_scale": 5.0,
+        "guidance_embed": 2.5,
+        "sampler": "Euler a",
+        "negative_prompt": "(worst quality, low quality, normal quality, blurry, photorealistic, 3d render, photograph)",
+        "aesthetic_score": 6.5,
+        "sharpness": 1,
+        "refiner_start": 0.7
+      }
+    },
+    {
+      "name": "Small Logo",
+      "description": "Clean, minimal logo design",
+      "config": {
+        "steps": 20,
+        "guidance_scale": 4.5,
+        "guidance_embed": 2.0,
+        "sampler": "Euler a",
+        "negative_prompt": "(worst quality, low quality, blurry, complex background, noisy, grainy, text, words)",
+        "aesthetic_score": 7.5,
+        "sharpness": 2,
+        "refiner_start": 0.75
+      }
+    },
+    {
+      "name": "Quick Draft",
+      "description": "Fast generation with fewer steps",
+      "config": {
+        "steps": 15,
+        "guidance_scale": 4.0,
+        "guidance_embed": 1.5,
+        "sampler": "Euler a",
+        "negative_prompt": "(worst quality, low quality)",
+        "aesthetic_score": 5,
+        "sharpness": 1,
+        "refiner_start": 0.6
+      }
+    },
+    {
+      "name": "Fluid Gradient",
+      "description": "Smooth, flowing gradients with ribbon-like effects",
+      "config": {
+        "steps": 25,
+        "guidance_scale": 6.5,
+        "guidance_embed": 2.5,
+        "sampler": "Euler a",
+        "negative_prompt": "(sharp geometric, harsh lines, flat, pixelated, noisy, grainy, photographic)",
+        "aesthetic_score": 7.0,
+        "sharpness": 1,
+        "refiner_start": 0.75
+      }
+    },
+    {
+      "name": "Neon Dreams",
+      "description": "Vibrant neon aesthetics with dark backgrounds",
+      "config": {
+        "steps": 30,
+        "guidance_scale": 6.0,
+        "guidance_embed": 3.0,
+        "sampler": "DPM++ 2M Karras",
+        "negative_prompt": "(daylight, bright background, pastel, muted colors, flat, no glow)",
+        "aesthetic_score": 8.0,
+        "sharpness": 2,
+        "refiner_start": 0.8
+      }
+    },
+    {
+      "name": "Retro Wave",
+      "description": "80s-inspired synthwave aesthetic",
+      "config": {
+        "steps": 25,
+        "guidance_scale": 5.5,
+        "guidance_embed": 2.5,
+        "sampler": "Euler a",
+        "negative_prompt": "(modern, realistic, natural, muted, grayscale)",
+        "aesthetic_score": 7.0,
+        "sharpness": 1,
+        "refiner_start": 0.7
+      }
+    },
+    {
+      "name": "Glass Morphism",
+      "description": "Modern frosted glass effect with depth",
+      "config": {
+        "steps": 30,
+        "guidance_scale": 7.0,
+        "guidance_embed": 3.0,
+        "sampler": "DPM++ 2M Karras",
+        "negative_prompt": "(flat, solid, opaque, no depth, no transparency, harsh)",
+        "aesthetic_score": 8.0,
+        "sharpness": 1,
+        "refiner_start": 0.85
+      }
+    },
+    {
+      "name": "Paper Cut",
+      "description": "Layered paper-cut art style",
+      "config": {
+        "steps": 25,
+        "guidance_scale": 5.5,
+        "guidance_embed": 2.5,
+        "sampler": "Euler a",
+        "negative_prompt": "(gradient, smooth, photographic, 3d, realistic, glossy)",
+        "aesthetic_score": 7.0,
+        "sharpness": 2,
+        "refiner_start": 0.75
+      }
+    }
+  ]
+}

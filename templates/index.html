@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DrawThings Web Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="hero">
+            <div class="hero-content">
+                <h1>illustr/ai/tor</h1>
+                <p class="subtitle">AI Image Generation by Novo Studios</p>
+            </div>
+        </header>
+
+        <main>
+            <section class="generation-form">
+                <div class="tab-container">
+                    <div class="tab-buttons">
+                        <button type="button" class="tab-button active" onclick="switchTab('simple')">Simple Mode</button>
+                        <button type="button" class="tab-button" onclick="switchTab('advanced')">Advanced Mode</button>
+                    </div>
+
+                    <form id="generateForm" onsubmit="generateImage(event)">
+                        <div id="simpleTab" class="tab-content active">
+                            <div class="form-group">
+                                <label for="prompt">Prompt</label>
+                                <input type="text" id="prompt" name="prompt"
+                                       placeholder="Describe what you want to generate..."
+                                       required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Image Size</label>
+                                <div class="size-options">
+                                    {% for size, pixels in sizes.items() %}
+                                    <label class="radio-label">
+                                        <input type="radio" name="size" value="{{ size }}"
+                                               {{ 'checked' if size == 'medium' else '' }}>
+                                        <span>{{ size.title() }} ({{ pixels }}px)</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="preset">Style Preset</label>
+                                <select id="preset" name="preset">
+                                    {% for preset in presets %}
+                                    <option value="{{ preset.name }}">{{ preset.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div id="presetDescription" class="preset-description">
+                                    {{ presets[0].description }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="advancedTab" class="tab-content">
+                            <div class="advanced-options">
+                                <div class="option-buttons">
+                                    <button type="button" class="option-button active" onclick="switchAdvancedOption('chat')">AI Chat</button>
+                                    <button type="button" class="option-button" onclick="switchAdvancedOption('json')">Custom JSON</button>
+                                </div>
+
+                                <div id="chatOption" class="option-content active">
+                                    <div class="chat-interface">
+                                        <div class="chat-messages" id="chatMessages">
+                                            <div class="system-message">
+                                                Hello! I'm your AI art consultant. Tell me about the image you'd like to create.
+                                            </div>
+                                        </div>
+                                        <div class="chat-input">
+                                            <input type="text" id="chatInput" 
+                                                   placeholder="Describe your image idea..."
+                                                   onkeypress="if(event.key === 'Enter') { event.preventDefault(); sendChatMessage(); }">
+                                            <button type="button" onclick="sendChatMessage()">Send</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="jsonOption" class="option-content">
+                                    <div class="form-group">
+                                        <label for="customJson">Custom Request Body</label>
+                                        <textarea id="customJson" name="custom_json" rows="15" 
+                                                placeholder="Paste your JSON request body here..."></textarea>
+                                        <div class="custom-json-description">
+                                            Paste a complete JSON request body to override all configuration
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="generateBtn">Generate Image</button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="generation-status" style="display: none;">
+                <div class="status-content">
+                    <div class="spinner"></div>
+                    <p>Generating your image...</p>
+                    <p class="status-detail">This may take a few minutes</p>
+                </div>
+            </section>
+
+            <section class="gallery">
+                <h2>Recent Generations</h2>
+                <div id="imageGallery" class="image-grid">
+                    {% for image in recent_images %}
+                    <div class="image-card" data-image-path="{{ image.path }}" data-metadata-path="{{ image.path|replace('.png', '.json') }}" onclick="openModal(this)">
+                        <img src="{{ url_for('static', filename=image.path) }}" 
+                             alt="{{ image.prompt }}"
+                             loading="lazy">
+                        <div class="image-info">
+                            <p class="prompt">{{ image.prompt }}</p>
+                            <p class="details">
+                                {{ image.size }} • {{ image.preset }} • {{ image.time }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="modal-body">
+                <div class="modal-image">
+                    <img id="modalImage" src="" alt="">
+                </div>
+                <div class="modal-details">
+                <div class="modal-actions">
+                    <button class="delete-button" onclick="deleteImage(this)" data-image-path="">
+                        <svg class="delete-icon" viewBox="0 0 24 24">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                        Delete Image
+                    </button>
+                </div>
+                <div class="modal-prompt">
+                    <h3>Prompt</h3>
+                    <p id="modalPrompt"></p>
+                </div>
+                <div class="modal-advanced">
+                        <button class="advanced-toggle" onclick="toggleAdvanced(this)">
+                            <span>Advanced Details</span>
+                            <svg class="arrow-icon" viewBox="0 0 24 24">
+                                <path d="M7 10l5 5 5-5z"/>
+                            </svg>
+                        </button>
+                        <div class="advanced-content">
+                            <pre id="modalMetadata"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Advanced tab option switching
+        function switchAdvancedOption(option) {
+            // Update buttons
+            document.querySelectorAll('.option-button').forEach(button => {
+                button.classList.remove('active');
+                if (button.textContent.toLowerCase().includes(option)) {
+                    button.classList.add('active');
+                }
+            });
+            
+            // Update content
+            document.querySelectorAll('.option-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(option + 'Option').classList.add('active');
+        }
+
+        // Chat functionality
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Clear input
+            input.value = '';
+            input.disabled = true;
+
+            // Add user message to chat
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML += `
+                <div class="user-message">
+                    <div class="message-content">${escapeHtml(message)}</div>
+                </div>
+            `;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                // Add AI response to chat
+                chatMessages.innerHTML += `
+                    <div class="ai-message">
+                        <div class="message-content">${formatMessage(data.message)}</div>
+                    </div>
+                `;
+
+                // If we have a complete configuration, update the form
+                if (data.isComplete && data.configuration) {
+                    document.getElementById('customJson').value = 
+                        JSON.stringify(data.configuration, null, 2);
+                    // Switch to JSON view but don't auto-submit
+                    switchAdvancedOption('json');
+                }
+
+            } catch (error) {
+                chatMessages.innerHTML += `
+                    <div class="error-message">
+                        <div class="message-content">Error: ${error.message}</div>
+                    </div>
+                `;
+            } finally {
+                input.disabled = false;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatMessage(message) {
+            // Look for markdown JSON code blocks
+            const codeBlockRegex = /```json\n([\s\S]*?)\n```/;
+            const match = message.match(codeBlockRegex);
+            
+            if (match) {
+                try {
+                    // Extract and parse the JSON from the code block
+                    const json = JSON.parse(match[1]);
+                    const formattedJson = JSON.stringify(json, null, 2);
+                    
+                    // Replace the code block with our copyable version
+                    return message.replace(codeBlockRegex, `
+                        <pre class="copyable">
+                            <button class="copy-button" onclick="event.preventDefault(); event.stopPropagation(); copyToClipboard(this, ${JSON.stringify(formattedJson)})">
+                                Copy
+                            </button>
+                            ${formattedJson}
+                        </pre>
+                    `).replace(/\n/g, '<br>');
+                } catch {
+                    // If JSON parsing fails, just format line breaks
+                    return message.replace(/\n/g, '<br>');
+                }
+            } else {
+                // If no code block found, just format line breaks
+                return message.replace(/\n/g, '<br>');
+            }
+        }
+
+        function copyToClipboard(button, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                button.textContent = 'Failed';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+
+        // Update preset description when selection changes
+        const presetSelect = document.getElementById('preset');
+        const presetDescription = document.getElementById('presetDescription');
+        const presetOptions = JSON.parse('{{ presets|tojson|safe }}');
+
+        presetSelect.addEventListener('change', () => {
+            const selected = presetOptions.find(p => p.name === presetSelect.value);
+            presetDescription.textContent = selected.description;
+        });
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+                if (button.textContent.toLowerCase().includes(tabName)) {
+                    button.classList.add('active');
+                }
+            });
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Update form validation
+            const promptInput = document.getElementById('prompt');
+            if (tabName === 'advanced') {
+                promptInput.required = false;
+            } else {
+                promptInput.required = true;
+            }
+        }
+
+        // Modal functionality
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalMetadata = document.getElementById('modalMetadata');
+        const closeModal = document.querySelector('.close-modal');
+
+        function toggleAdvanced(button) {
+            const content = button.nextElementSibling;
+            const arrow = button.querySelector('.arrow-icon');
+            
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+                arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        async function openModal(imageCard) {
+            const imagePath = imageCard.dataset.imagePath;
+            const metadataPath = imageCard.dataset.metadataPath;
+            
+            // Set image
+            modalImage.src = `/static/${imagePath}`;
+            modalImage.alt = imageCard.querySelector('img').alt;
+            
+            // Set delete button image path
+            const deleteButton = document.querySelector('.delete-button');
+            deleteButton.dataset.imagePath = imagePath;
+            
+            // Fetch and display metadata
+            try {
+                const response = await fetch(`/static/${metadataPath}`);
+                const metadata = await response.json();
+                
+                // Set prompt
+                modalPrompt.textContent = metadata.configuration.prompt;
+                
+                // Set full metadata
+                modalMetadata.textContent = JSON.stringify(metadata, null, 2);
+            } catch (error) {
+                modalPrompt.textContent = 'Error loading prompt';
+                modalMetadata.textContent = 'Error loading metadata';
+                console.error('Error:', error);
+            }
+            
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+
+        async function deleteImage(button) {
+            if (!confirm('Are you sure you want to delete this image?')) {
+                return;
+            }
+
+            const imagePath = button.dataset.imagePath;
+            
+            try {
+                const response = await fetch('/delete_image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image_path: imagePath })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete image');
+                }
+
+                // Remove the image card from the gallery
+                const imageCard = document.querySelector(`[data-image-path="${imagePath}"]`);
+                if (imageCard) {
+                    imageCard.remove();
+                }
+
+                // Close the modal
+                closeModalView();
+            } catch (error) {
+                alert('Error deleting image: ' + error.message);
+                console.error('Error:', error);
+            }
+        }
+
+        // Handle keyboard events for modal
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && modal.style.display === 'block') {
+                closeModalView();
+            }
+        });
+
+        // Close modal function
+        function closeModalView() {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+            // Reset advanced section
+            const advancedContent = document.querySelector('.advanced-content');
+            const arrow = document.querySelector('.arrow-icon');
+            if (advancedContent) {
+                advancedContent.style.maxHeight = null;
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Close modal when clicking X or outside
+        closeModal.onclick = closeModalView;
+
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                closeModalView();
+            }
+        }
+
+        // Handle image generation
+        async function generateImage(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const generateBtn = form.querySelector('#generateBtn');
+            const statusSection = document.querySelector('.generation-status');
+            const gallery = document.getElementById('imageGallery');
+            const customJson = form.querySelector('#customJson').value.trim();
+            
+            // Show generating status
+            generateBtn.disabled = true;
+            statusSection.style.display = 'block';
+            
+            try {
+                const formData = new FormData(form);
+                
+                // If custom JSON was provided, validate it
+                if (customJson) {
+                    try {
+                        JSON.parse(customJson); // Validate JSON format
+                    } catch (e) {
+                        throw new Error('Invalid JSON format in custom request body');
+                    }
+                }
+                
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Create new image card
+                    const card = document.createElement('div');
+                    card.className = 'image-card';
+                    card.dataset.imagePath = result.image_path;
+                    card.dataset.metadataPath = result.image_path.replace('.png', '.json');
+                    card.onclick = () => openModal(card);
+                    
+                    card.innerHTML = `
+                        <img src="${result.image_path}" 
+                             alt="${result.metadata.configuration.prompt}"
+                             loading="lazy">
+                        <div class="image-info">
+                            <p class="prompt">${result.metadata.configuration.prompt}</p>
+                            <p class="details">
+                                ${result.metadata.configuration.imageSize}x${result.metadata.configuration.imageSize} • 
+                                ${result.metadata.configuration.preset} • 
+                                ${result.metadata.generationTime}
+                            </p>
+                        </div>
+                    `;
+                    
+                    // Add to start of gallery
+                    gallery.insertBefore(card, gallery.firstChild);
+                    
+                    // Remove oldest if more than 12
+                    if (gallery.children.length > 12) {
+                        gallery.removeChild(gallery.lastChild);
+                    }
+                } else {
+                    alert(`Generation failed: ${result.error}`);
+                }
+            } catch (error) {
+                alert(error.message || 'An error occurred during generation');
+                console.error(error);
+            } finally {
+                generateBtn.disabled = false;
+                statusSection.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
