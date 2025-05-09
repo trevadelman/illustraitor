@@ -1,6 +1,6 @@
 # illustr/ai/tor
 
-A sophisticated web interface for AI image generation powered by DrawThings API, featuring an intelligent chat assistant for prompt crafting and multiple generation modes.
+AI image generation powered by DrawThings API, featuring an intelligent chat assistant for prompt crafting and multiple generation modes.
 
 ## ⚠️ Important: DrawThings Requirement
 
